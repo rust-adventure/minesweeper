@@ -1,5 +1,4 @@
 use bevy::{
-    color::palettes::tailwind::*,
     input::common_conditions::input_just_pressed,
     prelude::*, render::camera::ScalingMode,
 };
@@ -50,15 +49,6 @@ fn main() {
                 MouseButton::Right,
             ))),
         )
-        // .add_systems(
-        //     OnEnter(GameState::Playing),
-        //     reset_game,
-        // )
-        // .add_systems(OnEnter(GameState::Menu), spawn_menu)
-        // .add_systems(
-        //     Update,
-        //     button_system.run_if(in_state(GameState::Menu)),
-        // )
         .enable_state_scoped_entities::<GameState>()
         .add_observer(
             |trigger: Trigger<RevealTile>,
@@ -120,7 +110,6 @@ fn main() {
                         0 => 12,
                         _ => 11
                     };
-                    dbg!(bomb_count);
 
                     if bomb_count == 0 {
                     for offset in [IVec2::X, IVec2::NEG_X, IVec2::Y, IVec2::NEG_Y].into_iter() {
