@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-#[derive(Event)]
+#[derive(EntityEvent)]
 pub struct RevealTile {
+    pub entity: Entity,
     pub is_primary_click: bool,
     pub tile_pos: TilePos,
 }
@@ -53,7 +54,7 @@ pub fn pick_tile(
             let cursor_pos =
                 Vec4::from((cursor_pos, 0.0, 1.0));
             let cursor_in_map_pos =
-                map_transform.compute_matrix().inverse()
+                map_transform.to_matrix().inverse()
                     * cursor_pos;
             cursor_in_map_pos.xy()
         };
@@ -88,13 +89,11 @@ pub fn pick_tile(
                         _ => {}
                     }
                 } else {
-                    commands.trigger_targets(
-                        RevealTile {
-                            is_primary_click: true,
-                            tile_pos,
-                        },
-                        tile_entity,
-                    )
+                    commands.trigger(RevealTile {
+                        entity: tile_entity,
+                        is_primary_click: true,
+                        tile_pos,
+                    })
                 }
             }
         }

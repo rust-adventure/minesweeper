@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use rand::{
-    Rng, distributions::WeightedIndex,
-    prelude::Distribution,
-};
+use rand::Rng;
 
 use crate::assets::ImageAssets;
 
@@ -17,7 +14,7 @@ pub fn spawn_board(
     mut commands: Commands,
     images: Res<ImageAssets>,
 ) -> Result {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let map_size = TilemapSize { x: 20, y: 20 };
 
@@ -40,7 +37,8 @@ pub fn spawn_board(
                     Concealed,
                 ))
                 .id();
-            let make_entity_bomb = rng.r#gen::<f32>() > 0.9;
+            let make_entity_bomb =
+                rng.random::<f32>() > 0.9;
             if make_entity_bomb {
                 commands.entity(tile_entity).insert(Bomb);
             }

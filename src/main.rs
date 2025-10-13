@@ -1,6 +1,7 @@
 use bevy::{
     input::common_conditions::input_just_pressed,
-    prelude::*, render::camera::ScalingMode,
+    camera::ScalingMode,
+    prelude::*, 
 };
 use bevy_ecs_tilemap::{
     TilemapPlugin,
@@ -21,17 +22,11 @@ fn main() {
     App::new()
         .insert_resource(ClearColor(Color::WHITE))
         .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "Minesweeper!".into(),
-                    ..default()
-                }),
-                ..default()
-            }),
+            DefaultPlugins,
             TilemapPlugin,
         ))
         .init_state::<GameState>()
-        .add_plugins((AssetsPlugin,))
+        .add_plugins(AssetsPlugin)
         .add_systems(
             OnEnter(GameState::Startup),
             (
@@ -49,36 +44,33 @@ fn main() {
                 MouseButton::Right,
             ))),
         )
-        .enable_state_scoped_entities::<GameState>()
         .add_observer(
-            |trigger: Trigger<RevealTile>,
+            |reveal_tile: On<RevealTile>,
             mut commands: Commands,
              bombs: Query<(), With<Bomb>>,
              map: Single<(&TilemapSize, &TileStorage)>,
              concealed_tiles: Query<&Concealed>,
              mut tiles: Query<(&TilePos, &mut TileTextureIndex)>,
              | -> Result {
-
-                if bombs.get(trigger.target()).is_ok() {
-                        // if the tile is a bomb and the player clicked it directly;
-                        // boom.
-                    if trigger.event().is_primary_click {
-                        // commands.trigger(EndGame);
+                if bombs.get(reveal_tile.entity).is_ok() {
+                    // if the tile is a bomb and the player clicked it directly;
+                    // boom.
+                    if reveal_tile.event().is_primary_click {
                         commands.trigger(RevealBombs);
-                        commands.entity(trigger.target()).remove::<Concealed>();
+                        commands.entity(reveal_tile.entity).remove::<Concealed>();
          
                     }
-                } else if concealed_tiles.get(trigger.target()).is_ok() {
+                } else if concealed_tiles.get(reveal_tile.entity).is_ok() {
                     // if the tile is hidden, then try to reveal it
-                    commands.entity(trigger.target()).remove::<Concealed>();
+                    commands.entity(reveal_tile.entity).remove::<Concealed>();
                     let RevealTile {
                         tile_pos,
                         ..
-                    } = trigger.event();
+                    } = reveal_tile.event();
 
                     let (map_size, tile_storage) = map.into_inner();
 
-                    let Ok(tile) = tiles.get(trigger.target()) else {
+                    let Ok(tile) = tiles.get(reveal_tile.entity) else {
                         return Ok(());
                     };
                     let bomb_count = [
@@ -104,7 +96,7 @@ fn main() {
                         }
                     }).filter(|v| *v).count();
         
-                    let mut current_tile = tiles.get_mut(trigger.target())?;
+                    let mut current_tile = tiles.get_mut(reveal_tile.entity)?;
                     current_tile.1.0 = match bomb_count {
                         bomb_count if bomb_count > 0 && bomb_count < 10 => bomb_count as u32 - 1,
                         0 => 12,
@@ -118,10 +110,11 @@ fn main() {
                         if next_pos.within_map_bounds(map_size) {
                         if let Some(next_tile) = tile_storage.get(&next_pos) {
                             if let Ok(_) = concealed_tiles.get(next_tile) {
-                            commands.trigger_targets(RevealTile {
+                            commands.trigger(RevealTile {
+                                entity: next_tile,
                                 is_primary_click: false,
                                 tile_pos: next_pos
-                            }, next_tile)
+                            })
                         }
                         };
                     }
@@ -131,7 +124,7 @@ fn main() {
             },
         )
         .add_observer(|
-            _trigger: Trigger<RevealBombs>,
+            _: On<RevealBombs>,
             mut bombs: Query<&mut TileTextureIndex, (With<Bomb>, With<Concealed>)>,
         | {
             for mut bomb in &mut bombs {
